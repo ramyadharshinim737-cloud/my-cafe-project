@@ -1,7 +1,8 @@
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_USER = 'ramyadharshini'
+        // Inga 'm' sethu update pannunga
+        DOCKER_HUB_USER = 'ramyadharshinim' 
         DOCKER_HUB_CREDS = 'docker-hub-creds'
     }
     stages {
@@ -10,17 +11,19 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDS}", passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
                         
-                        // Windows Batch command use panrom - ithu WSL error-ah thavirkkum
+                        // Windows Docker Desktop connect panna intha line kandaipa irukanum
+                        def dockerCmd = "export DOCKER_HOST=tcp://host.docker.internal:2375 && "
+
                         echo 'Logging into Docker Hub...'
-                        bat "docker login -u %DOCKER_HUB_USERNAME% -p %DOCKER_HUB_PASSWORD%"
+                        sh "${dockerCmd} docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
                         
                         echo 'Building and Pushing Backend...'
-                        bat "docker build -t %DOCKER_HUB_USER%/cafe-backend:latest ./backend"
-                        bat "docker push %DOCKER_HUB_USER%/cafe-backend:latest"
+                        sh "${dockerCmd} docker build -t ${DOCKER_HUB_USER}/cafe-backend:latest ./backend"
+                        sh "${dockerCmd} docker push ${DOCKER_HUB_USER}/cafe-backend:latest"
                         
                         echo 'Building and Pushing Frontend...'
-                        bat "docker build -t %DOCKER_HUB_USER%/cafe-frontend:latest ./frontend"
-                        bat "docker push %DOCKER_HUB_USER%/cafe-frontend:latest"
+                        sh "${dockerCmd} docker build -t ${DOCKER_HUB_USER}/cafe-frontend:latest ./frontend"
+                        sh "${dockerCmd} docker push ${DOCKER_HUB_USER}/cafe-frontend:latest"
                     }
                 }
             }
