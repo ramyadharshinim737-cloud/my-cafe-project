@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aroma Cafe - Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 900px; margin: auto; text-align: center; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+        .menu-card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .cart-section { background: #fff3e0; padding: 15px; margin-bottom: 20px; border-radius: 10px; border: 1px dashed #ff9800; }
+        button { background: #6f4e37; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #5d4037; }
+        .logout-btn { background: #d32f2f; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-flex">
+        <h1>☕ Aroma Cafe Menu</h1>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+    
+    <div class="cart-section">
+        <h3>🛒 Your Cart</h3>
+        <p>Items: <span id="cart-count">0</span></p>
+        <p>Total: ₹<span id="cart-total">0</span></p>
+        <button onclick="placeOrder()">Place Order</button>
+    </div>
+
+    <div id="menu-items" class="menu-grid">
+        <p>Loading menu...</p>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+
+    // 1. Backend-la irunthu saved cart-ah load panna
+    async function syncCart() {
+        try {
+            const response = await fetch('http://localhost:5000/api/cart');
+            cart = await response.json();
+            updateCartUI();
+        } catch (err) {
+            console.log("Cart sync failed (Backend check pannunga)");
+        }
+    }
+
+    // 2. Menu Items load panna
+    async function loadMenu() {
+        try {
+            const response = await fetch('http://localhost:5000/api/menu');
+            const items = await response.json();
+            
+            const menuContainer = document.getElementById('menu-items'); 
+            menuContainer.innerHTML = ''; 
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'menu-card';
+                card.innerHTML = `
+                    <h3>${item.name}</h3>
+                    <p>${item.description}</p>
+                    <p><strong>₹${item.price}</strong></p>
+                    <button onclick="addToCart('${item.name}', ${item.price})">Add to Cart</button>
+                `;
+                menuContainer.appendChild(card);
+            });
+        } catch (error) {
+            document.getElementById('menu-items').innerHTML = "Server connection error! ❌";
+        }
+    }
+
+    // 3. Cart-la add panna (Directly to Backend)
+    async function addToCart(name, price) {
+        const item = { name, price };
+        try {
+            await fetch('http://localhost:5000/api/cart/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item })
+            });
+            syncCart(); // Database-oda sync pannuvom
+        } catch (err) {
+            alert("Cart update panna mudiyala!");
+        }
+    }
+
+    function updateCartUI() {
+        document.getElementById('cart-count').innerText = cart.length;
+        let total = cart.reduce((sum, item) => sum + item.price, 0);
+        document.getElementById('cart-total').innerText = total;
+    }
+
+    // 4. Order place panna
+    async function placeOrder() {
+        if (cart.length === 0) return alert("Cart empty-ah iruku!");
+        const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+        try {
+            const response = await fetch('http://localhost:5000/api/place-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: cart, totalPrice: total })
+            });
+            const result = await response.json();
+            alert(result.message); 
+            
+            // Order potta apram backend cart-ah clear pannanum (Optional)
+            cart = [];
+            updateCartUI();
+        } catch (error) {
+            alert("Order panna mudiyala!");
+        }
+    }
+
+    function handleLogout() {
+        alert("Logging out...");
+        window.location.href = 'login.html';
+    }
+
+    // Page load aagumpothu rendu vishayam nadakkanum
+    window.onload = () => {
+        loadMenu();
+        syncCart();
+    };
+</script>
+
+</body>
+</html>
