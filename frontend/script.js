@@ -1,43 +1,40 @@
-document.getElementById('loginForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Page refresh aaguratha thadukkum
-
-    // User enter panna details-ah edukkurom
-    const username = document.getElementById('username').value;
+// Login Function - Backend kooda connect panna
+async function handleLogin() {
+    // Inga 'username' nu irukkuradha 'email' nu maathunga (HTML-la 'email' id irundha)
+    const email = document.getElementById('email').value; 
     const password = document.getElementById('password').value;
 
-    console.log("Logging in with:", username);
+    console.log("Attempting login for:", email);
 
-    // Ippo oru dummy check (Pinadi backend kooda connect pannuvom)
-    if (username === "admin" && password === "cafe123") {
-        alert("Login Successful! Welcome to Aroma Cafe.");
-        
-        // Success aanathum dashboard-ku kooptu povom
-        window.location.href = "dashboard.html";
-    } else {
-        alert("Invalid Username or Password. Try again!");
-    }let cart = [];
+    try {
+        const response = await fetch('http://localhost:5000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Login Successful! Welcome to Aroma Cafe.");
+            window.location.href = "dashboard.html";
+        } else {
+            alert(result.message || "Invalid Email or Password!");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Backend server connection error! Docker check pannunga.");
+    }
+}
+
+// Cart and Checkout logic (idhai appadiye maintain pannunga)
+let cart = [];
 let total = 0;
 
 function addToCart(name, price) {
     cart.push({ name, price });
     total += parseFloat(price);
-    
-    // UI-ah update panrom
     document.getElementById('cart-items').innerText = `Items: ${cart.length}`;
     document.getElementById('total-price').innerText = total;
-    
     alert(`${name} added to cart!`);
 }
-
-function checkout() {
-    if(cart.length === 0) {
-        alert("Your cart is empty!");
-    } else {
-        alert(`Order Placed Successfully! Total: ₹${total}`);
-        cart = [];
-        total = 0;
-        document.getElementById('cart-items').innerText = `Items: 0`;
-        document.getElementById('total-price').innerText = "0";
-    }
-}
-});
