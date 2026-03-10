@@ -8,17 +8,20 @@ pipeline {
         stage('Build & Push') {
             steps {
                 script {
+                    // Inga 'docker-hub-creds' sariyaaga Jenkins Credentials-la irukkanum
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDS}", passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USERNAME')]) {
                         
-                        // Windows Docker Desktop-ah connect panna intha host name correct!
-                        def dockerCmd = "export DOCKER_HOST=tcp://host.docker.internal:2375 && "
-
-                        sh "${dockerCmd} docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
-                        sh "${dockerCmd} docker build -t ${DOCKER_HUB_USER}/cafe-backend:latest ./backend"
-                        sh "${dockerCmd} docker push ${DOCKER_HUB_USER}/cafe-backend:latest"
+                        echo 'Logging into Docker Hub...'
+                        // Socket mounting vazhiya direct connection, so DOCKER_HOST thevai illai
+                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
                         
-                        sh "${dockerCmd} docker build -t ${DOCKER_HUB_USER}/cafe-frontend:latest ./frontend"
-                        sh "${dockerCmd} docker push ${DOCKER_HUB_USER}/cafe-frontend:latest"
+                        echo 'Building and Pushing Backend...'
+                        sh "docker build -t ${DOCKER_HUB_USER}/cafe-backend:latest ./backend"
+                        sh "docker push ${DOCKER_HUB_USER}/cafe-backend:latest"
+                        
+                        echo 'Building and Pushing Frontend...'
+                        sh "docker build -t ${DOCKER_HUB_USER}/cafe-frontend:latest ./frontend"
+                        sh "docker push ${DOCKER_HUB_USER}/cafe-frontend:latest"
                     }
                 }
             }
