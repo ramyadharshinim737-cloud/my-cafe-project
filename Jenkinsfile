@@ -1,13 +1,37 @@
 pipeline {
-    agent any 
+    agent any
+    environment {
+        DOCKER_HUB_USER = 'ramyadharshinim'
+        DOCKER_HUB_CREDS = 'docker-hub-creds'
+    }
     stages {
         stage('Checkout') {
             steps {
-                retry(3) { // Retry the checkout step up to 3 times
+                retry(3) {
                     checkout scm
                 }
             }
         }
-        // Other stages...
+        stage('Build & Push') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDS}", 
+                                     passwordVariable: 'DOCKER_HUB_PASSWORD', 
+                                     usernameVariable: 'DOCKER_HUB_USERNAME')]) {
+                        
+                        echo 'Logging into Docker Hub...'
+                        sh "export DOCKER_HOST=tcp://host.docker.internal:2375 && docker login -u ${DOCKER_HUB_USERNAME} -p '${DOCKER_HUB_PASSWORD}'"
+                        
+                        echo 'Building Backend...'
+                        sh "export DOCKER_HOST=tcp://host.docker.internal:2375 && docker build -t ${DOCKER_HUB_USER}/cafe-backend:latest ./backend"
+                        sh "export DOCKER_HOST=tcp://host.docker.internal:2375 && docker push ${DOCKER_HUB_USER}/cafe-backend:latest"
+                        
+                        echo 'Building Frontend...'
+                        sh "export DOCKER_HOST=tcp://host.docker.internal:2375 && docker build -t ${DOCKER_HUB_USER}/cafe-frontend:latest ./frontend"
+                        sh "export DOCKER_HOST=tcp://host.docker.internal:2375 && docker push ${DOCKER_HUB_USER}/cafe-frontend:latest"
+                    }
+                }
+            }
+        }
     }
 }
